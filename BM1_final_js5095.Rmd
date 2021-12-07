@@ -1,0 +1,76 @@
+---
+title: "BM1_Final"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+```{r cars}
+library(tidyverse)
+
+#read data
+df_crime = read_csv("./cdi.csv")
+
+#clean up data
+df_crime = 
+  df_crime %>%
+  mutate(crime_rate = crimes / pop)
+
+#explore the data
+## population structure - 
+plot(df_crime$pop18, df_crime$crime_rate)
+plot(df_crime$pop65, df_crime$crime_rate)
+
+## medical resources - 
+plot(df_crime$docs, df_crime$crime_rate)
+plot(df_crime$beds, df_crime$crime_rate)
+
+## education level - 
+plot(df_crime$hsgrad, df_crime$crime_rate)
+plot(df_crime$bagrad, df_crime$crime_rate)
+
+## income level -
+plot(df_crime$pcincome, df_crime$crime_rate)
+plot(df_crime$poverty, df_crime$crime_rate) # the promising factor
+
+## unemployment rate -
+plot(df_crime$unemp, df_crime$crime_rate)
+
+
+#explore the collineararity between variables
+lm()
+
+# fit SLR
+reg_crime = lm(crime_rate ~ pop18, data = df_crime)
+summary(reg_crime)
+
+reg_crime = lm(crime_rate ~ pop65, data = df_crime)
+summary(reg_crime)
+
+reg_crime = lm(crime_rate ~ docs, data = df_crime)
+summary(reg_crime)
+
+# Diagnostics
+## Outlier
+## Residuals
+## multicollinearity
+
+```
+
+## Including Plots
+
+You can also embed plots, for example:
+
+```{r pressure, echo=FALSE}
+plot(pressure)
+```
+
+Note that the `echo = FALSE` parameter was added to the code chunk to prevent printing of the R code that generated the plot.
