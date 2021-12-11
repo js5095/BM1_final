@@ -1,0 +1,121 @@
+---
+title: 'MLR: Confounding and Interaction'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+
+```
+
+## Interaction Example
+
+Is there a relationship between age and birthweight?
+
+```{r}
+# read data
+birth = read_csv("./lowbwt_ALL.csv") %>%
+  mutate(smoke = factor(smoke), race = factor(race))
+
+# birthweight vs age
+ggplot(birth) + 
+  geom_point(aes(x = age, y = bwt)) +
+  theme_bw()
+
+# SLR
+slr = lm(bwt ~ age, data = birth)
+summary(slr)
+
+```
+
+Interaction: the relationship between 2 variables is different (or varies) based on the level of a third variable
+
+Does the relationship between age and birth weight vary by smoking status? 
+
+```{r}
+# birthweight vs age by smoking status
+ggplot(birth, aes(x = age, y = bwt, color = smoke)) + 
+  geom_point() +
+  geom_smooth(method="lm", se=F, aes(group = smoke, color = smoke)) +
+  theme_bw()
+
+# fit model with interaction
+interact = lm(bwt ~ age*smoke, data = birth)
+summary(interact)
+
+```
+
+Stratify the anaysis by smoking status. 
+
+* Smokers have a negative, but not statistically significant association b/w age and baby birth weight
+
+* Non-Smokers have a positive, statistically significant association b/w age and baby birth weight
+
+
+```{r}
+# subset data
+smokers = filter(birth, smoke == "1")
+nonsmokers = filter(birth, smoke == "0")
+
+# fit models
+summary(lm(bwt ~ age, data = smokers))
+summary(lm(bwt ~ age, data = nonsmokers))
+
+```
+
+
+## Confounding Example
+
+To be a confounder the variable must be:
+
+1) Associated with the outcome (bwt)
+
+2) Associated with the exposure (age)
+
+3) Not in the causal pathway between the exposure and outcome
+
+Does race confound the relationship between age and birthweight?
+
+Answer: The age coefficient reduced from 12.36 in SLR to 6.19 in MLR after adjusting for race (~50% reduction). 
+We can conclude that race confounds the relationship between age and birth weight.
+
+
+```{r}
+# condition (1)
+bwt_race = lm(bwt ~ race, data = birth)
+summary(bwt_race)
+
+# condition (2)
+age_race = lm(age ~ race, data = birth)
+summary(age_race)
+
+# fit full model 
+full = lm(bwt ~ age + race, data = birth)
+summary(full)
+anova(full)
+
+```
+
+Is there an interaction between age and race?
+
+```{r}
+# birthweight vs age by race
+ggplot(birth, aes(x = age, y = bwt, color = race)) + 
+  geom_point() +
+  geom_smooth(method="lm", se=F, aes(group = race, color = race)) +
+  theme_bw()
+
+# check for interaction
+summary(lm(bwt ~ age*race, data = birth))
+
+# summarize across levels of race
+anova(lm(bwt ~ age*race, data = birth))
+
+```
+
+
+
+
+

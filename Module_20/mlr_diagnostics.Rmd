@@ -1,0 +1,149 @@
+---
+title: 'MLR: Diagnostics'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE, message = FALSE, warning = FALSE)
+
+library(tidyverse)
+library(MASS) # boxcox
+library(performance) # vif
+
+```
+
+## Residual vs Fitted & QQ Plots
+
+A transformation (log, square, squre root, etc) can improve the model fit (shown in residual vs fitted plot).
+
+```{r}
+# read data
+surg = read_csv("./Surgical.csv")
+
+# fit model
+fit1 = lm(Survival ~ Bloodclot + Progindex + Enzyme + Liver, data = surg)
+
+# residual vs fitted plot
+plot(fit1, which = 1)
+
+# QQ plot
+plot(fit1, which = 2)
+
+# fit model - log transform the outcome
+fit2 = lm(Lnsurvival ~ Bloodclot + Progindex + Enzyme + Liver,  data = surg)
+
+# residual vs fitted plot
+plot(fit2, which = 1)
+
+# QQ plot
+plot(fit2, which = 2)
+
+```
+
+## Box-Cox Transformation 
+
+```{r}
+# fit model
+fit1 = lm(Survival ~ Bloodclot, data = surg)
+
+# choose best transformation - choosing from lambda in (-3,3)
+boxcox(fit1, lambda = seq(-3, 3, by = 0.25))
+
+# fit multivariate model
+mult.fit1 = lm(Survival ~ Bloodclot + Progindex + Enzyme + Liver +
+                 Age + Gender + Alcmod + Alcheav, data = surg) 
+
+# check diagnostics
+plot(mult.fit1)
+boxcox(mult.fit1)
+
+# fit multivariate model with log transform
+mult.fit2 = lm(Lnsurvival ~ Bloodclot + Progindex + Enzyme + Liver + 
+                 Age + Gender + Alcmod + Alcheav, data = surg) 
+
+# check diagnostics
+summary(mult.fit2)
+boxcox(mult.fit2) 
+
+```
+
+## Checking to Outliers and Influential Points
+
+```{r}
+# residuals vs leverage plot
+plot(mult.fit1, which = 4)
+
+# remove influential points
+surgOut = surg[-c(5,28),]
+
+# plot with and without influential points
+plot(surg$Bloodclot, surg$Survival)
+plot(surgOut$Bloodclot, surgOut$Survival)
+
+# fit model with and without influential points
+with = lm(Survival ~ Bloodclot + Progindex + Enzyme + Liver + Age + 
+            Gender + Alcmod + Alcheav, data = surg) 
+
+without = lm(Survival ~ Bloodclot + Progindex + Enzyme + Liver + Age + 
+            Gender + Alcmod + Alcheav, data = surgOut)
+
+summary(with); summary(without)
+
+# check without diagnostics
+plot(without)
+
+```
+
+## Assessing Multicollinearity
+
+```{r}
+# Generate data
+set.seed(1)
+
+data.multi = tibble(age = round(rnorm(100, 30, 10),2)) %>%
+  mutate(height = 25 + 2*age + rnorm(100, 0, 15),
+         age_copy = age, 
+         age_new = age + rnorm(100, 0, 2))
+
+# Correlation matrix for all variables
+cor(data.multi)
+
+# Scatter plot matrix for all variables
+pairs(data.multi)
+
+# Fit a simple linear regression with original age
+reg1 = lm(height ~ age, data = data.multi)
+summary(reg1)
+
+# Fit a linear regression with original age and age_copy
+reg2 = lm(height ~ age + age_copy, data = data.multi)
+summary(reg2)
+
+# Fit a linear regression with original age and age_new
+reg3 = lm(height ~ age + age_new, data = data.multi)
+summary(reg3)
+
+# Fit a linear regression with original age, age_copy and age_new
+reg4 = lm(height ~ age + age_copy + age_new, data = data.multi)
+summary(reg4)
+
+# Calculate the variance inflation factor (VIF)
+check_collinearity(reg3)
+
+```
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+

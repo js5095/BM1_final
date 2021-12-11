@@ -1,0 +1,69 @@
+---
+title: 'MLR: ANOVA Testing'
+output: pdf_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+
+library(tidyverse)
+
+```
+
+## Compare Nested Models
+
+Compare m1 and m2 (nested) using ANOVA and likelihood ratio test.
+
+```{r}
+# read data and recode medschl
+hosp = read_csv("./Hospital.csv") %>% 
+  janitor::clean_names() %>%
+  mutate(medschl = ifelse(medschl == 2, 0, medschl))
+
+# model 1
+m1 = lm(los ~ beds + infrisk, data = hosp)
+summary(m1)
+
+# model 2
+m2 = lm(los ~ beds + infrisk + medschl + nurse, data = hosp)
+summary(m2)
+
+# compare nested (small vs large) models
+# Ho: smaller model is defensible
+anova(m1, m2)
+
+anova(m1)
+anova(m2)
+logLik(m1)
+# likelihood ratio test for nested models
+delta = -2*(logLik(m1) - logLik(m2))
+
+# p-value for LRT
+1 - pchisq(delta, 2)
+
+```
+
+Calculate the 'partial' R for the effect of infrisk, given that beds and medschl are already in the model.
+
+Answer: SSR(INFRISK|BEDS+MS) = 69.54
+
+```{r}
+# fit model
+m3 = lm(los ~ beds + medschl + infrisk, data = hosp)
+
+# get partial R
+anova(m3)
+
+# SSR(infrisk|beds+medschl)=69.54
+
+
+# Fit a regression only with beds+medschl and extract the SSE
+m4 = lm(los ~ beds + medschl, data = hosp)
+anova(m4)
+# SSE(BEDS, MS)=338.77
+# The partial R for infrisk, given beds and medschl in the model is equal to 69.54/338.7=0.21
+
+```
+
+
+

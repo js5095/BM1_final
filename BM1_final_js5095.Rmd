@@ -7,22 +7,59 @@ output: html_document
 knitr::opts_chunk$set(echo = TRUE)
 ```
 
-## R Markdown
-
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
-
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
 
 ```{r cars}
 library(tidyverse)
+library(dplyr)
 
-#read data
-df_crime = read_csv("./cdi.csv")
-
-#clean up data
+# read and clean up data
 df_crime = 
+  read_csv("./cdi.csv") %>%
+  mutate(CMR_1000 = crimes/pop*1000, phys_rt = docs/pop, beds_rt = beds/pop)
+
+df_crime_sub =
   df_crime %>%
-  mutate(crime_rate = crimes / pop)
+  dplyr::select(-id, -cty, -state, -docs, -beds, -totalinc)
+
+df_crime_factor = 
+  df_crime %>%
+  mutate(region = factor(region), state = factor(state))
+
+df_crime_s = 
+  df_crime %>%
+  dplyr::select(CMR_1000, phys_rt, beds_rt)
+
+
+# exploratory
+pairs(df_crime)
+
+# correlation plot
+corrplot(cor(df_crime), type = "upper", diag = FALSE)
+
+# Boxplots for each variable
+par(mfrow=c(2,3))
+boxplot(df_crime$CMR_1000, main='crime')
+boxplot(df_crime$phys_rt, main='doctor')
+boxplot(df_crime$pop18,main='age18-34' )
+boxplot(df_crime$pop65, main='age65')
+boxplot(df_crime$area, main='area')
+boxplot(df_crime$beds_rt, main='beds')
+boxplot(df_crime$bagrad, main='bachelor')
+boxplot(df_crime$hsgrad, main='high scholl')
+boxplot(df_crime$poverty, main='poverty')
+boxplot(df_crime$unemp, main='employ')
+boxplot(df_crime$pcincome, main='income')
+
+# fit regression using all predictors
+mult.fit = lm(Lnsurvival ~ ., data = df_crime)
+summary(mult.fit)
+
+
+library(GGally)
+df <- 
+  df_crime_sub %>% 
+  ggscatmat(columns = c(1: 14))
+
 
 #explore the data
 ## population structure - 
@@ -45,24 +82,21 @@ plot(df_crime$poverty, df_crime$crime_rate) # the promising factor
 plot(df_crime$unemp, df_crime$crime_rate)
 
 
-#explore the collineararity between variables
+#explore the col-linearity between variables
 lm()
 
 # fit SLR
-reg_crime = lm(crime_rate ~ pop18, data = df_crime)
-summary(reg_crime)
-
-reg_crime = lm(crime_rate ~ pop65, data = df_crime)
-summary(reg_crime)
-
-reg_crime = lm(crime_rate ~ docs, data = df_crime)
-summary(reg_crime)
-
+fit1 = lm(crime_rate ~ ., data = df_crime)
+summary(fit1)
 # Diagnostics
 ## Outlier
 ## Residuals
 ## multicollinearity
-
+cor_crime = df_crime %>%
+  select(pop18, pop65, )
+cor(cor_crime)
+corrplot(cor(cor_crime))
+corrplot(cor(cdi_clean), type = "upper", diag = FALSE)
 ```
 
 ## Including Plots
